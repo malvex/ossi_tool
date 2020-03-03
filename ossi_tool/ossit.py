@@ -18,7 +18,7 @@ class Ossi(object):
     Init the base object with some default variables.
     """
 
-    def __init__(self, output_file, debug):
+    def __init__(self, output_file=None, debug=False):
         """
         Init ossi object
 
