@@ -119,7 +119,9 @@ class Ossi(object):
                     # self.row_cmd = ' '.join(self.row)
                     print '-------- \n\r{0}\n\r--------'.format(' '.join(self.row))
                     self.output_writer('-------- \n{0}\n--------\n'.format(' '.join(self.row)))
-                    self.ossi_cmd(' '.join(self.row))
+                    ret = self.ossi_cmd(' '.join(self.row))
+                    self.output_writer(ret)
+                    self.output_writer('\n')
 
     def prompt(self, timeout=-1):
 
@@ -171,8 +173,7 @@ class Ossi(object):
 
                 # print '---- last data ---'
 
-                self.output_writer(self.cmd_result)
-                self.output_writer('\n')
+                return self.cmd_result
 
     def data_parse(self, data):
         """
@@ -299,7 +300,9 @@ def main():
             a.cmd_parser(args.inputfile)
 
         elif args.inputfile is None and args.command is not None:
-            a.ossi_cmd(args.command)
+            ret = a.ossi_cmd(args.command)
+            self.output_writer(ret)
+            self.output_writer('\n')
 
         else:
             print('There is neither an input csv file neither a command to execute')
