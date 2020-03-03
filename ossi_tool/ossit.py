@@ -9,31 +9,6 @@ import re
 
 __version__ = "0.3.0"
 
-"""
-Handle imput paramaters
-
-"""
-
-parser = argparse.ArgumentParser(description='''My Description. \
-        And what a lovely description it is. ''', epilog="""All's well that ends well.""")
-parser.add_argument("host", help="Host name or address, where want to connect")
-parser.add_argument("username", help="Username for host")
-parser.add_argument("-p", "--password", help="Password for host")
-parser.add_argument("-i", "--inputfile", help="Input file name (CSV)")
-parser.add_argument("-o", "--outputfile", help="Output file name")
-parser.add_argument("-v", "--debug", help="Trun ON the debug logging of OSSI terminal. \
-                    Debugis loggeg into the debug.log", action='count')
-# Planned feature
-parser.add_argument("-c", "--command", help="CM command as a string; \
-                     eg. <display station xxxx>")
-# parser.add_argument("-f", "--fieldID", help="FieldID /what you want t change/")
-# parser.add_argument("-d", "--data", help="data for change command")
-args = parser.parse_args()
-
-if args.password is not None:
-    password = args.password
-else:
-    password = getpass.getpass('password: ')
 
 
 class Ossi(object):
@@ -43,15 +18,16 @@ class Ossi(object):
     Init the base object with some default variables.
     """
 
-    def __init__(self):
+    def __init__(self, output_file, debug):
         """
         Init ossi object
 
         Init the base object with some default variables.
         """
         self.cmd_error = 0
-        self.debug = args.debug
+        self.debug = debug
         self.ossi_alive = False
+        self.outputfile = output_file
 
     def ossi_open(self, host, username, password):
         """
@@ -90,16 +66,11 @@ class Ossi(object):
                 except Exception as identifier:
                     print 'Did not recognized prompt for Terminal Type'
                     self.ossi_alive = False
-                 
+
             except Exception as identifier:
                 print 'Login failed', self.s.before
                 self.ossi_alive = False
-            
-            
-            
-                    
-            
-            
+
         except pxssh.ExceptionPxssh as self.e:
             print("pxssh failed on login.")
             print(self.e)
@@ -160,8 +131,8 @@ class Ossi(object):
         except Exception as e:
             #print (e)
             return False
-                  
-       
+
+
     def ossi_cmd(self, command):
         """
         Send 'command' to ossi terminal, and read the output.
@@ -181,27 +152,25 @@ class Ossi(object):
                 print '-- Command Error --'
                 self.cmd_error += 1
                 self.failed_cmd[str(self.command)] = self.s.after
-                          
+
             else:
                 while self.index == 0:
 
                     self.cmd_raw_result += self.s.before
                     self.s.sendline('y')
-                    
 
                     if self.prompt(2):
                         pass
                     else:
                         self.index = self.s.expect(['####fake', '\rd\r\n\rt\r\n\r', '\rd*t\r\n\r'])
-                    
+
                 self.cmd_raw_result += self.s.before
 
                 #Call command output parser
                 self.cmd_result = self.data_parse(self.cmd_raw_result)
-                
+
                 # print '---- last data ---'
 
-                
                 self.output_writer(self.cmd_result)
                 self.output_writer('\n')
 
@@ -240,19 +209,12 @@ class Ossi(object):
             elif re.match('t', self.line):
                 if self.command_pass:
                     break
-  
-            
-            
 
         # print '*** page data ***'
         # print ''.join(page_data)
         print self.page_data
         return self.page_data
 
-    
-
-    
-    
     # def multi_line_record_process(self):
 
     #     for self.line in self.lines:
@@ -262,7 +224,7 @@ class Ossi(object):
     #         self.result = self.line.lstrip().rstrip()
     #         if re.match('^d', self.result):
     #             self.result = self.result.lstrip('d')
-                
+
     #             #self.result = re.findall('[^\rd].*[^\r]', self.line) # replaced by lstrip() and rtrip()
     #             if len(self.result) is not 0:
     #                 if len(self.page_data) > 0:
@@ -270,7 +232,7 @@ class Ossi(object):
     #                         self.page_data.append(',')
     #                     self.page_data.append(re.sub('\t', ',', self.result))
     #                     self.new_record = False
-                        
+
     #                     # print page_data
     #                 else:
     #                     self.page_data.append(re.sub('\t', ',', self.result))
@@ -282,27 +244,20 @@ class Ossi(object):
     #             self.new_record = True
 
 
-            
-
-
-
-
-
     def output_writer(self, output):
         """
         Write 'output' object into the outputfile.
 
         If the outputfile is not defined than only print output to the screen.
         """
-        self.outputfile = args.outputfile
-        self.output = output
-        if self.outputfile is not None:
-            # print self.output
+        if self.outputfile:
             try:
                 with open(self.outputfile, 'a+') as self.f:
-                    self.f.write(self.output)
+                    self.f.write(output)
             except:
                 print ("Failed to open: ", self.outputfile)
+        else:
+            print output
 
 
 def main():
@@ -312,7 +267,25 @@ def main():
     Bring things together.
     """
     print '--- Let Start! ---'
-    a = Ossi()
+
+    # Handle imput paramaters
+    parser = argparse.ArgumentParser(description='''My Description. \
+            And what a lovely description it is. ''', epilog="""All's well that ends well.""")
+    parser.add_argument("host", help="Host name or address, where want to connect")
+    parser.add_argument("username", help="Username for host")
+    parser.add_argument("-p", "--password", help="Password for host")
+    parser.add_argument("-i", "--inputfile", help="Input file name (CSV)")
+    parser.add_argument("-o", "--outputfile", help="Output file name")
+    parser.add_argument("-v", "--debug", help="Trun ON the debug logging of OSSI terminal. \
+                        Debugis loggeg into the debug.log", action='count')
+    # Planned feature
+    parser.add_argument("-c", "--command", help="CM command as a string; \
+                         eg. <display station xxxx>")
+    # parser.add_argument("-f", "--fieldID", help="FieldID /what you want t change/")
+    # parser.add_argument("-d", "--data", help="data for change command")
+    args = parser.parse_args()
+
+    a = Ossi(args.outputfile, args.debug)
     if args.password is not None:
         password = args.password
     else:
@@ -324,10 +297,10 @@ def main():
     if a.ossi_alive is True:
         if args.inputfile is not None and args.command is None:
             a.cmd_parser(args.inputfile)
-            
+
         elif args.inputfile is None and args.command is not None:
             a.ossi_cmd(args.command)
-            
+
         else:
             print('There is neither an input csv file neither a command to execute')
     a.ossi_close()
